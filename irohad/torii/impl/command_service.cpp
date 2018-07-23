@@ -64,6 +64,16 @@ namespace torii {
     });
   }
 
+  namespace {
+    iroha::protocol::ToriiResponse makeResponse(
+        shared_model::crypto::Hash h, iroha::protocol::TxStatus status) {
+      iroha::protocol::ToriiResponse response;
+      response.set_tx_hash(shared_model::crypto::toBinaryString(h));
+      response.set_tx_status(status);
+      return response;
+    }
+  }  // namespace
+
   void CommandService::Torii(const iroha::protocol::Transaction &request) {
     shared_model::proto::TransportBuilder<
         shared_model::proto::Transaction,
@@ -81,20 +91,17 @@ namespace torii {
                 return;
               }
 
-              // setting response
-              iroha::protocol::ToriiResponse response;
-              response.set_tx_hash(
-                  shared_model::crypto::toBinaryString(tx_hash));
-              response.set_tx_status(
-                  iroha::protocol::TxStatus::STATELESS_VALIDATION_SUCCESS);
-
               // Send transaction to iroha
               tx_processor_->transactionHandle(
                   std::make_shared<shared_model::proto::Transaction>(
                       std::move(iroha_tx.value)));
 
               this->pushStatus(
-                  "Torii", std::move(tx_hash), std::move(response));
+                  "Torii",
+                  std::move(tx_hash),
+                  makeResponse(
+                      tx_hash,
+                      iroha::protocol::TxStatus::STATELESS_VALIDATION_SUCCESS));
             },
             [this, &request](const auto &error) {
               // getting hash from invalid transaction
@@ -108,10 +115,8 @@ namespace torii {
                          tx_hash.hex());
 
               // setting response
-              iroha::protocol::ToriiResponse response;
-              response.set_tx_hash(
-                  shared_model::crypto::toBinaryString(tx_hash));
-              response.set_tx_status(
+              auto response = makeResponse(
+                  tx_hash,
                   iroha::protocol::TxStatus::STATELESS_VALIDATION_FAILED);
               response.set_error_message(std::move(error.error));
 
@@ -140,18 +145,15 @@ namespace torii {
                   return;
                 }
 
-                // setting response
-                iroha::protocol::ToriiResponse response;
-                response.set_tx_hash(
-                    shared_model::crypto::toBinaryString(tx_hash));
-                response.set_tx_status(
-                    iroha::protocol::TxStatus::STATELESS_VALIDATION_SUCCESS);
-
                 // Send transaction to iroha
                 tx_processor_->transactionHandle(tx);
 
                 this->pushStatus(
-                    "ToriiList", std::move(tx_hash), std::move(response));
+                    "ToriiList",
+                    std::move(tx_hash),
+                    makeResponse(tx_hash,
+                                 iroha::protocol::TxStatus::
+                                     STATELESS_VALIDATION_SUCCESS));
               });
             },
             [this, &tx_list](auto &error) {
@@ -180,10 +182,8 @@ namespace torii {
                         shared_model::crypto::DefaultHashProvider::makeHash(
                             shared_model::proto::makeBlob(tx.payload()));
 
-                    iroha::protocol::ToriiResponse response;
-                    response.set_tx_hash(
-                        shared_model::crypto::toBinaryString(hash));
-                    response.set_tx_status(
+                    auto response = makeResponse(
+                        hash,
                         iroha::protocol::TxStatus::STATELESS_VALIDATION_FAILED);
                     response.set_error_message(sequence_error);
 
