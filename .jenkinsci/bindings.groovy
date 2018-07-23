@@ -130,3 +130,5 @@ def doAndroidBindings(abiVersion) {
   sh "cp $artifactsPath /tmp/bindings-artifact"
   return artifactsPath
 }
+
+return this
