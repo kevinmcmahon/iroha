@@ -277,9 +277,6 @@ TEST_F(TransactionProcessorTest, TransactionProcessorOnCommitTest) {
   }
 
   EXPECT_CALL(*status_bus, publish(_))
-      // evey transaction is notified that it is first
-      // stateless valid, then stateful valid and
-      // eventually committed
       .Times(txs.size() * 3)
       .WillRepeatedly(testing::Invoke([this](auto response) {
         status_map[response->transactionHash()] = response;
@@ -344,8 +341,8 @@ TEST_F(TransactionProcessorTest, TransactionProcessorInvalidTxsTest) {
   }
 
   // For all transactions from proposal
-  // transaction notifier will notified
-  // twice (first that they are stateless
+  // transaction will be published twice
+  // (first that they are stateless
   // valid and second that they either
   // passed or not stateful validation)
   // Plus all transactions from block will
